@@ -39,6 +39,7 @@ public class FileStripper {
 		while ((line = bf.readLine()) != null) {
 			lines.append(line.trim());
 			lines.append("\n");
+			String foo = "\\s";
 		}
 		
 		// Remove entire header
@@ -59,8 +60,9 @@ public class FileStripper {
 
 		// kill HTML tags
 		trimmedFile = trimmedFile.replaceAll("<[^>]*>", " ");
-		
 		trimmedFile = StringEscapeUtils.unescapeHtml4(trimmedFile);
+		
+		trimmedFile = trimmedFile.toLowerCase();
 		
 		bf.close();
 		

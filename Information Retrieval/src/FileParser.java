@@ -16,7 +16,7 @@ public class FileParser {
 		Document doc = Jsoup.parse(file, "UTF-8");
 		
 		// TODO: parse info box
-		// TODO: parse anchor tags 
+		// TODO: parse anchor tags
 		// TODO: parse table of contents?
 	}
 }
