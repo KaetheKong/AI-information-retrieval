@@ -1,1 +1,20 @@
 *.class
+
+InformationRetrieval/.metadata
+InformationRetrieval/bin/
+InformationRetrieval/tmp/
+InformationRetrieval/local.properties
+InformationRetrieval/.settings/
+InformationRetrieval/.loadpath
+
+# Eclipse Core
+InformationRetrieval/.project
+
+# External tool builders
+InformationRetrieval/.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+InformationRetrieval/*.launch
+
+# JDT-specific (Eclipse Java Development Tools)
+InformationRetrieval/.classpath
