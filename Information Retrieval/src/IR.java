@@ -19,6 +19,8 @@ public class IR {
 
 		String query = JOptionPane.showInputDialog(frame,
 				"What query do you want to search for?");
+		
+		frame.setVisible(true);
 		query = query.toLowerCase();
 		System.out.println(query);
 		
@@ -56,18 +58,19 @@ public class IR {
 				}
 			}
 		}
-
-		double maxScore = Double.MIN_VALUE;
+		System.out.println("Out of first double for loop!");
+		
+		double maxScore = Double.NEGATIVE_INFINITY;
 		String maxFile = "";
 		for (File file : listOfFiles) {
 			double score = 0;
 			for (String q : qarr) {
 				String content = new String(Files.readAllBytes(file.toPath()));
-				int numMatch = StringUtils.countMatches(content, q);
+				int numMatch = StringUtils.countMatches(content.toLowerCase(), q);
 				int docLen = fileLength.get(file.getName());
 				double freq = numMatch / ((double) docLen);
 				BM25ScoringFunc fuc = new BM25ScoringFunc(cardNumOfFiles,
-						docLen, k1, b, avgdl);
+						docLen, k1, b, avgdl);				
 				score += fuc.score(freq, fileContainsq.get(q).size());
 			}
 			if (score > maxScore) {
@@ -77,7 +80,8 @@ public class IR {
 		}
 
 		System.out.println(maxFile);
-
+		
+		
 	}
 
 }
