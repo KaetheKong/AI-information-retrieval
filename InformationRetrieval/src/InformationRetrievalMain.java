@@ -2,6 +2,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -9,28 +10,22 @@ import java.util.Map;
 
 import javax.swing.JOptionPane;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class InformationRetrievalMain {
 
 	public static void main(String[] args) throws IOException {
-		// parse and curate all files in the "res" folder (to the "out" folder)
-		Curator.parseAll();
-
 		// Get files
-		File folder = new File("out");
 		File[] fileList = folder.listFiles();
 
 		// Store content and length of each file
 		int numFiles = fileList.length;
 		double averageDocLength = 0;
-		Map<String, String> filesMap = new HashMap<>();
+		Map<String, List<String>> filesMap = new HashMap<>();
 		Map<String, Integer> fileLengthsMap = new HashMap<>();
 		for (File file : fileList) {
-			String content = new String(Files.readAllBytes(file.toPath()));
-			filesMap.put(file.getName(), content);
+			String content = new String(Files.readAllBytes(file.toPath())).toLowerCase();
 
 			String[] words = content.split("\\s");
+			filesMap.put(file.getName(), Arrays.asList(words));
 			averageDocLength += words.length;
 			fileLengthsMap.put(file.getName(), words.length);
 		}
@@ -52,8 +47,8 @@ public class InformationRetrievalMain {
 					filesContainingQueryMap.put(q, list);
 				}
 				for (File file : fileList) {
-					String content = filesMap.get(file.getName());
-					if (content.toLowerCase().contains(q)) {
+					List<String> words = filesMap.get(file.getName());
+					if (words.contains(q)) {
 						filesContainingQueryMap.get(q).add(file);
 					}
 				}
@@ -66,8 +61,12 @@ public class InformationRetrievalMain {
 			for (File file : fileList) {
 				double score = 0;
 				for (String q : splitQuery) {
-					String content = filesMap.get(file.getName());
-					int numMatches = StringUtils.countMatches(content.toLowerCase(), q);
+					List<String> words = filesMap.get(file.getName());
+					int numMatches = (int) words.stream()
+							// Filter by words that equal the query
+							.filter(word -> word.equals(q))
+							// count the number of words that match the query
+							.count();
 					int docLength = fileLengthsMap.get(file.getName());
 					double frequency = numMatches / ((double) docLength);
 
@@ -81,24 +80,24 @@ public class InformationRetrievalMain {
 			}
 
 			List<String> sortedScores = new ArrayList<>();
-			scores.entrySet().stream() // streaming API on the map entries
-					.sorted(Comparator.comparing(e -> e.getValue(), Comparator.reverseOrder())) // sort
-																								// descending
-					.limit(10) // get the first 10
-					.forEach(e -> sortedScores.add(e.getKey())); // add them to
-																	// the
-																	// list
+			scores.entrySet().stream()
+					// Sort descending
+					.sorted(Comparator.comparing(e -> e.getValue(), Comparator.reverseOrder()))
+					// get the first 10
+					.limit(10)
+					// add them to the list
+					.forEach(e -> sortedScores.add(e.getKey()));
 
 			if (sortedScores.size() > 0) {
 				System.out.println("Top result: " + sortedScores.get(0));
 				System.out.println("Top 10 results: ");
-				for (String score : sortedScores) {
-					System.out.println("\t" + score);
+				for (String name : sortedScores) {
+					System.out.println("\t" + name + String.format(", score = %.4f", scores.get(name)));
 				}
 			} else {
 				System.out.println("No results");
 			}
-		} 
+		}
 	}
 
 }
