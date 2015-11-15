@@ -14,6 +14,7 @@ public class InformationRetrievalMain {
 
 	public static void main(String[] args) throws IOException {
 		// Get files
+		File folder = new File("res/curated-presidents");
 		File[] fileList = folder.listFiles();
 
 		// Store content and length of each file
