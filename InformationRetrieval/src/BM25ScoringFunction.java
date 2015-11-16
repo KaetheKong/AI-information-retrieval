@@ -23,7 +23,7 @@ public class BM25ScoringFunction {
 	private double idf(int numDocsContainingQ) {
 		double numerator = (double) this.docCardinality - numDocsContainingQ + 0.5;
 		double denominator = numDocsContainingQ + 0.5;
-		return Math.log(numerator / denominator);
+		return Math.log(numerator / denominator + 1);
 	}
 
 	public double score(double frequency, int numDocsContainingQ) {
