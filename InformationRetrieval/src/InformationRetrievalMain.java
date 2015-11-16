@@ -7,8 +7,18 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.swing.JOptionPane;
+
+import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.util.CoreMap;
 
 public class InformationRetrievalMain {
 
@@ -36,7 +46,7 @@ public class InformationRetrievalMain {
 			// Get and parse query
 			query = JOptionPane.showInputDialog(null, "What do you want to search for?\n(type \"quit\" to quit)");
 			if (query.equals("quit")) break;
-			query = query.toLowerCase();
+			query = parseQuery(query);
 			System.out.println("Query: " + query);
 			String[] splitQuery = query.split("\\s");
 
@@ -99,6 +109,32 @@ public class InformationRetrievalMain {
 				System.out.println("No results");
 			}
 		}
+	}
+
+	private static String parseQuery(String query) {
+		Properties props = new Properties();
+		props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
+		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+
+		Annotation document = new Annotation(query);
+		pipeline.annotate(document);
+
+		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+		List<String> importantPOS = Arrays.asList("CD", "EX", "FW", "JJ", "JJR", "JJS", "LS", "MD", "NN", "NNS", "NNP",
+				"NNPS", "POS", "PRP", "PRP$", "RB", "RBR", "RBS", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ");
+
+		StringBuilder sb = new StringBuilder();
+		for (CoreMap sentence : sentences) {
+			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
+				String lemma = token.get(LemmaAnnotation.class);
+				String pos = token.get(PartOfSpeechAnnotation.class);
+				if (importantPOS.contains(pos)) {
+					sb.append(lemma);
+					sb.append(" ");
+				}
+			}
+		}
+		return sb.toString();
 	}
 
 }
