@@ -18,3 +18,4 @@ InformationRetrieval/*.launch
 
 # JDT-specific (Eclipse Java Development Tools)
 InformationRetrieval/.classpath
+InformationRetrieval/lib/stanford-corenlp-3.5.2-models.jar
