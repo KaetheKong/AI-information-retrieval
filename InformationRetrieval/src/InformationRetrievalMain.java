@@ -23,6 +23,10 @@ import edu.stanford.nlp.util.CoreMap;
 public class InformationRetrievalMain {
 
 	public static void main(String[] args) throws IOException {
+		Properties props = new Properties();
+		props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
+		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+
 		// Get files
 		File folder = new File("res/curated-presidents");
 		File[] fileList = folder.listFiles();
@@ -33,7 +37,7 @@ public class InformationRetrievalMain {
 		Map<String, List<String>> filesMap = new HashMap<>();
 		Map<String, Integer> fileLengthsMap = new HashMap<>();
 		for (File file : fileList) {
-			String content = new String(Files.readAllBytes(file.toPath())).toLowerCase();
+			String content = new String(Files.readAllBytes(file.toPath()));// .toLowerCase();
 
 			String[] words = content.split("\\s");
 			filesMap.put(file.getName(), Arrays.asList(words));
@@ -45,8 +49,9 @@ public class InformationRetrievalMain {
 		while (true) {
 			// Get and parse query
 			query = JOptionPane.showInputDialog(null, "What do you want to search for?\n(type \"quit\" to quit)");
-			if (query.equals("quit")) break;
-			query = parseQuery(query);
+			if (query.equals("quit"))
+				break;
+			query = parseQuery(pipeline, query);
 			System.out.println("Query: " + query);
 			String[] splitQuery = query.split("\\s");
 
@@ -71,24 +76,40 @@ public class InformationRetrievalMain {
 			Map<String, Double> scores = new HashMap<>();
 			for (File file : fileList) {
 				double score = 0;
-				for (String q : splitQuery) {
-					List<String> words = filesMap.get(file.getName());
-					int numMatches = (int) words.stream()
-							// Filter by words that equal the query
-							.filter(word -> word.equals(q))
-							// count the number of words that match the query
-							.count();
-					int docLength = fileLengthsMap.get(file.getName());
-					double frequency = numMatches / ((double) docLength);
+				List<String> words = filesMap.get(file.getName());
+				if (splitQuery.length <= 1) {
+					for (String q : splitQuery) {
+						int numMatches = (int) words.stream()
+								// Filter by words that equal the query
+								.filter(word -> word.equals(q))
+								// count the number of words that match the
+								// query
+								.count();
+						int docLength = fileLengthsMap.get(file.getName());
+						double frequency = numMatches / ((double) docLength);
 
-					BM25ScoringFunction func = new BM25ScoringFunction(numFiles, docLength, k1, b, averageDocLength);
-					int numFilesContainingQ = filesContainingQueryMap.get(q).size();
-					score += func.score(frequency, numFilesContainingQ);
+						BM25ScoringFunction func = new BM25ScoringFunction(numFiles, docLength, k1, b,
+								averageDocLength);
+						int numFilesContainingQ = filesContainingQueryMap.get(q).size();
+						score += func.score(frequency, numFilesContainingQ);
+					}
+				} else {
+					Bigram bgram = new Bigram(splitQuery);
+					String content = new String(Files.readAllBytes(file.toPath()));
+					bgram.createAllBisets();
+					bgram.countOcc(content);
+
+					double freq = bgram.overallprob();
+					System.out.println(freq);
+					score = freq;
 				}
+
 				if (score != 0) {
 					scores.put(file.getName(), Math.abs(score));
 				}
 			}
+
+			normalizeScoresToPercents(scores);
 
 			List<String> sortedScores = new ArrayList<>();
 			scores.entrySet().stream()
@@ -103,7 +124,7 @@ public class InformationRetrievalMain {
 				System.out.println("Top result: " + sortedScores.get(0));
 				System.out.println("Top 10 results: ");
 				for (String name : sortedScores) {
-					System.out.println("\t" + name + String.format(", score = %.4f", scores.get(name)));
+					System.out.println("\t" + name + String.format(", confidence = %.2f %%", scores.get(name)));
 				}
 			} else {
 				System.out.println("No results");
@@ -111,11 +132,16 @@ public class InformationRetrievalMain {
 		}
 	}
 
-	private static String parseQuery(String query) {
-		Properties props = new Properties();
-		props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
-		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+	private static void normalizeScoresToPercents(Map<String, Double> scores) {
+		double max = scores.entrySet().stream().max((e1, e2) -> e1.getValue().compareTo(e2.getValue())).get()
+				.getValue();
+		double min = scores.entrySet().stream().min((e1, e2) -> e1.getValue().compareTo(e2.getValue())).get()
+				.getValue();
 
+		scores.entrySet().stream().forEach(e -> e.setValue((e.getValue() - min) * 100.0 / max));
+	}
+
+	private static String parseQuery(StanfordCoreNLP pipeline, String query) {
 		Annotation document = new Annotation(query);
 		pipeline.annotate(document);
 
@@ -134,7 +160,7 @@ public class InformationRetrievalMain {
 				}
 			}
 		}
-		return sb.toString();
+		return sb.toString();// .toLowerCase();
 	}
 
 }
